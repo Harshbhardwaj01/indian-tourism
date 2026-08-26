@@ -16,39 +16,44 @@ A full-stack web application designed to showcase the vibrant and diverse touris
 
 ## 🚀 Getting Started
 
-### Prerequisites
-- [Node.js](https://nodejs.org/) installed on your machine.
+### Docker
 
-### 1. Backend Setup (Node.js Server)
-1. Open a terminal and navigate to your backend folder.
-2. Initialize the project and install dependencies:
-   ```bash
-   npm init -y
-   npm install express cors
-   ```
-3. Place the `server.js` file in this folder.
-4. Start the server:
-   ```bash
-   node server.js
-   ```
-   *The server will run on `http://localhost:5000`*
+Prerequisite: [Docker Desktop](https://www.docker.com/products/docker-desktop/) with the Linux engine running.
 
-### 2. Frontend Setup (React App)
-1. Open a new terminal and navigate to your frontend folder.
-2. Create a new React app and install dependencies:
-   ```bash
-   npx create-react-app .
-   ```
-3. Replace the contents of `src/App.jsx` (or `App.js`) with the provided React code.
-4. Start the React development server:
-   ```bash
-   npm start
-   ```
-   *The app will run on `http://localhost:3000`*
+Start the frontend and backend together:
+
+```bash
+docker compose up --build
+```
+
+Open the app at `http://localhost:8080`. The API is available at `http://localhost:5000`.
+
+Stop the containers with:
+
+```bash
+docker compose down
+```
+
+### Local development
+
+Install dependencies and start the Vite frontend:
+
+```bash
+npm install
+npm run dev
+```
+
+Start the API in a second terminal:
+
+```bash
+npm run backend
+```
+
+The Vite dev server runs at `http://localhost:5173` and proxies `/api` requests to the backend.
 
 ## 📡 API Endpoints
 - `GET /api/destinations` - Fetches all available tourist destinations.
-- `POST /api/inquiry` - Submits a user inquiry from the contact form.
+- `POST /api/inquiries` - Submits a user inquiry from the contact form.
 
 ## 👨‍💻 Author
 **Harsh Bhardwaj**

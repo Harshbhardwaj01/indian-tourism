@@ -93,7 +93,7 @@ export default function App() {
     setLoading(true);
     try {
       // Attempt to connect to the Node.js backend
-      const response = await fetch('http://localhost:5000/api/destinations');
+      const response = await fetch('/api/destinations');
       if (!response.ok) throw new Error('Network response was not ok');
       const data = await response.json();
       setDestinations(data);
@@ -132,7 +132,7 @@ export default function App() {
 
     try {
       // Try hitting the real backend
-      const response = await fetch('http://localhost:5000/api/inquiries', {
+      const response = await fetch('/api/inquiries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
