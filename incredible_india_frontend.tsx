@@ -62,6 +62,28 @@ const FALLBACK_DESTINATIONS = [
 
 const CATEGORIES = ["All", "Heritage", "Nature", "Adventure", "Spiritual", "Relaxation"];
 
+const STATE_PLACES: Record<string, string[]> = {
+  Rajasthan: ["Jaipur", "Udaipur", "Jaisalmer", "Jodhpur"],
+  Kerala: ["Alappuzha", "Munnar", "Kochi", "Kovalam"],
+  Goa: ["Panaji", "Calangute Beach", "Palolem Beach", "Old Goa"],
+  Maharashtra: ["Mumbai", "Lonavala", "Aurangabad", "Mahabaleshwar"],
+  HimachalPradesh: ["Shimla", "Manali", "Dharamshala", "Spiti Valley"],
+  Uttarakhand: ["Dehradun", "Rishikesh", "Nainital", "Mussoorie"],
+  TamilNadu: ["Chennai", "Ooty", "Madurai", "Rameswaram"],
+  WestBengal: ["Kolkata", "Darjeeling", "Sundarbans", "Digha"]
+};
+
+const STATE_LABELS: Record<string, string> = {
+  Rajasthan: "Rajasthan",
+  Kerala: "Kerala",
+  Goa: "Goa",
+  Maharashtra: "Maharashtra",
+  HimachalPradesh: "Himachal Pradesh",
+  Uttarakhand: "Uttarakhand",
+  TamilNadu: "Tamil Nadu",
+  WestBengal: "West Bengal"
+};
+
 type Destination = {
   id: number;
   name: string;
@@ -79,6 +101,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedState, setSelectedState] = useState("");
+  const [selectedPlace, setSelectedPlace] = useState("");
   
   // Modal / Booking State
   const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
@@ -217,6 +241,71 @@ export default function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-16">
+
+        {/* State and place selection */}
+        <section className="mb-14" aria-labelledby="destination-picker-title">
+          <div className="mb-6">
+            <p className="text-sm font-bold uppercase tracking-wider text-orange-600">Plan your journey</p>
+            <h2 id="destination-picker-title" className="text-3xl font-bold text-slate-800 mt-2">Choose a destination</h2>
+            <p className="text-slate-500 mt-2">Start with a state, then choose the place you want to explore.</p>
+          </div>
+
+          <div className="grid gap-8 lg:grid-cols-[1fr_1.2fr]">
+            <div>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500 mb-3">Choose state</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3">
+                {Object.keys(STATE_PLACES).map((state) => (
+                  <button
+                    key={state}
+                    type="button"
+                    onClick={() => { setSelectedState(state); setSelectedPlace(""); }}
+                    aria-pressed={selectedState === state}
+                    className={`text-left px-4 py-3 rounded-xl border font-semibold transition-all ${
+                      selectedState === state
+                        ? 'bg-orange-600 text-white border-orange-600 shadow-lg shadow-orange-200'
+                        : 'bg-white text-slate-700 border-slate-200 hover:border-orange-300 hover:text-orange-700'
+                    }`}
+                  >
+                    {STATE_LABELS[state]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className={`rounded-2xl border p-5 transition-colors ${selectedState ? 'bg-orange-50 border-orange-200' : 'bg-slate-100 border-slate-200'}`}>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500 mb-3">
+                {selectedState ? `Choose place in ${STATE_LABELS[selectedState]}` : 'Choose place'}
+              </h3>
+              {selectedState ? (
+                <div className="flex flex-wrap gap-3">
+                  {STATE_PLACES[selectedState].map((place) => (
+                    <button
+                      key={place}
+                      type="button"
+                      onClick={() => setSelectedPlace(place)}
+                      aria-pressed={selectedPlace === place}
+                      className={`px-4 py-2.5 rounded-full border text-sm font-medium transition-all ${
+                        selectedPlace === place
+                          ? 'bg-slate-900 text-white border-slate-900'
+                          : 'bg-white text-slate-700 border-slate-200 hover:border-orange-400 hover:text-orange-700'
+                      }`}
+                    >
+                      <MapPin className="inline-block w-4 h-4 mr-1" />
+                      {place}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-slate-500">Select one of the states to see its places.</p>
+              )}
+              {selectedPlace && (
+                <p className="mt-5 text-sm font-semibold text-orange-700">
+                  Selected destination: {selectedPlace}, {STATE_LABELS[selectedState]}
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
         
         {/* Section Header & Filters */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
