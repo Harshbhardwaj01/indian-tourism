@@ -94,7 +94,7 @@ type Destination = {
   description: string;
 };
 
-type BookingStatus = 'submitting' | 'success' | null;
+type BookingStatus = 'submitting' | 'success' | 'error' | null;
 
 type LocationSelectionProps = {
   selectedState: string;
@@ -244,11 +244,7 @@ export default function App() {
       
       setBookingStatus('success');
     } catch {
-      // Simulate successful network request for preview purposes if backend is down
-      setTimeout(() => {
-        console.log("Mock Submission Payload:", payload);
-        setBookingStatus('success');
-      }, 1000);
+      setBookingStatus('error');
     }
   };
 
@@ -497,6 +493,18 @@ export default function App() {
                     className="w-full bg-slate-900 text-white py-3 rounded-xl font-medium hover:bg-slate-800"
                   >
                     Done
+                  </button>
+                </div>
+              ) : bookingStatus === 'error' ? (
+                <div className="text-center py-8">
+                  <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                  <h4 className="text-2xl font-bold text-slate-800 mb-2">Request not sent</h4>
+                  <p className="text-slate-500 mb-6">We could not reach the travel server. Please try again when the API is available.</p>
+                  <button
+                    onClick={() => setBookingStatus(null)}
+                    className="w-full bg-orange-600 text-white py-3 rounded-xl font-medium hover:bg-orange-700"
+                  >
+                    Try Again
                   </button>
                 </div>
               ) : (
