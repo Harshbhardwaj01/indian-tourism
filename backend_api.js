@@ -69,6 +69,14 @@ const destinations = [
 // Store inquiries in memory (would be a DB table in production)
 const inquiries = [];
 
+// Root endpoint for quick browser checks
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Indian Tourism API is running.',
+    endpoints: ['/api/health', '/api/destinations', '/api/inquiries']
+  });
+});
+
 // GET: Fetch all destinations (with optional category filter)
 app.get('/api/destinations', (req, res) => {
   try {
