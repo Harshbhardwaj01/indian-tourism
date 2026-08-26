@@ -26,7 +26,7 @@ Start the frontend and backend together:
 docker compose up --build
 ```
 
-Open the app at `http://localhost:8080`. The API is available at `http://localhost:5000`.
+Open the app at `http://localhost:8081`. The API is available at `http://localhost:5000`.
 
 Stop the containers with:
 
