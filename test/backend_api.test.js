@@ -16,6 +16,15 @@ after(async () => {
 });
 
 describe('backend API', () => {
+  it('serves API information from the root endpoint', async () => {
+    const response = await fetch(`${baseUrl}/`);
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(body.message, 'Indian Tourism API is running.');
+    assert.ok(body.endpoints.includes('/api/destinations'));
+  });
+
   it('reports a healthy service', async () => {
     const response = await fetch(`${baseUrl}/api/health`);
     const body = await response.json();
