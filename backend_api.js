@@ -130,9 +130,13 @@ app.get('/api/health', (req, res) => {
   res.json({ status: "Backend is running smoothly!" });
 });
 
-app.listen(PORT, () => {
-  console.log(`=================================`);
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Access API at http://localhost:${PORT}/api/destinations`);
-  console.log(`=================================`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`=================================`);
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Access API at http://localhost:${PORT}/api/destinations`);
+    console.log(`=================================`);
+  });
+}
+
+module.exports = app;
