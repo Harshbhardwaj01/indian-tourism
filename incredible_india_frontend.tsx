@@ -174,7 +174,7 @@ export default function App() {
       </nav>
 
       {/* Connection Banner */}
-      {!backendConnected && (
+      {!loading && !backendConnected && (
         <div className="bg-amber-100 text-amber-800 text-xs text-center py-2 flex items-center justify-center gap-2">
           <AlertCircle className="w-4 h-4" />
           Running in Preview Mode. Start the Node.js backend on port 5000 for full API integration.
