@@ -125,6 +125,11 @@ app.post('/api/inquiries', (req, res) => {
   }
 });
 
+// GET: Fetch submitted booking inquiries
+app.get('/api/inquiries', (req, res) => {
+  res.json(inquiries);
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: "Backend is running smoothly!" });

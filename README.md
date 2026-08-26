@@ -53,6 +53,7 @@ The Vite dev server runs at `http://localhost:5173` and proxies `/api` requests 
 
 ## 📡 API Endpoints
 - `GET /api/destinations` - Fetches all available tourist destinations.
+- `GET /api/inquiries` - Fetches submitted booking inquiries.
 - `POST /api/inquiries` - Submits a user inquiry from the contact form.
 
 ## 👨‍💻 Author

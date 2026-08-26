@@ -42,23 +42,32 @@ describe('backend API', () => {
     assert.ok(body.every((destination) => destination.category === 'Heritage'));
   });
 
-  it('accepts a valid inquiry', async () => {
-    const response = await fetch(`${baseUrl}/api/inquiries`, {
+  it('sends and receives a valid inquiry', async () => {
+    const inquiry = {
+      name: 'Test Traveller',
+      email: 'traveller@example.com',
+      destinationId: 1,
+      date: '2026-12-01',
+      guests: '2 People'
+    };
+    const sendResponse = await fetch(`${baseUrl}/api/inquiries`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: 'Test Traveller',
-        email: 'traveller@example.com',
-        destinationId: 1,
-        date: '2026-12-01',
-        guests: '2 People'
-      })
+      body: JSON.stringify(inquiry)
     });
-    const body = await response.json();
+    const sendBody = await sendResponse.json();
 
-    assert.equal(response.status, 201);
-    assert.equal(body.success, true);
-    assert.equal(body.data.email, 'traveller@example.com');
+    const receiveResponse = await fetch(`${baseUrl}/api/inquiries`);
+    const receivedInquiries = await receiveResponse.json();
+    const receivedInquiry = receivedInquiries.find((item) => item.id === sendBody.data.id);
+
+    assert.equal(sendResponse.status, 201);
+    assert.equal(sendBody.success, true);
+    assert.equal(receiveResponse.status, 200);
+    assert.deepEqual(receivedInquiry, sendBody.data);
+    assert.equal(receivedInquiry.email, inquiry.email);
+    assert.equal(receivedInquiry.destinationId, inquiry.destinationId);
+    assert.equal(receivedInquiry.guests, inquiry.guests);
   });
 
   it('rejects an inquiry without required fields', async () => {
