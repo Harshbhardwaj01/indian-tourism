@@ -81,4 +81,49 @@ describe('backend API', () => {
     assert.equal(response.status, 400);
     assert.match(body.message, /required/);
   });
+
+  it('creates a user account and allows login with saved credentials', async () => {
+    const signupPayload = {
+      name: 'Aarav',
+      surname: 'Sharma',
+      email: 'aarav@example.com',
+      phone: '9876543210',
+      password: 'India@2026',
+      confirmPassword: 'India@2026',
+      travelConsistency: 4
+    };
+
+    const signupResponse = await fetch(`${baseUrl}/api/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(signupPayload)
+    });
+    const signupBody = await signupResponse.json();
+
+    const loginResponse = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'aarav@example.com', password: 'India@2026' })
+    });
+    const loginBody = await loginResponse.json();
+
+    assert.equal(signupResponse.status, 201);
+    assert.equal(signupBody.success, true);
+    assert.equal(loginResponse.status, 200);
+    assert.equal(loginBody.success, true);
+    assert.equal(loginBody.user.email, 'aarav@example.com');
+  });
+
+  it('rejects a login when the password is incorrect', async () => {
+    const response = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'aarav@example.com', password: 'wrong-password' })
+    });
+    const body = await response.json();
+
+    assert.equal(response.status, 401);
+    assert.equal(body.success, false);
+    assert.match(body.message, /Invalid/i);
+  });
 });

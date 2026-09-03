@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Calendar, Star, Search, Navigation, User, Mail, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
+const API_BASE_URL = window.location.port === '5000'
+  ? '/api'
+  : `http://${window.location.hostname}:5000/api`;
+
 // This mock data mirrors the Node.js backend so the app works beautifully 
 // in browser previews even if the backend server isn't running locally yet.
 const FALLBACK_DESTINATIONS = [
@@ -94,6 +98,24 @@ type Destination = {
   description: string;
 };
 
+type UserProfile = {
+  id: number;
+  name: string;
+  surname: string;
+  username: string;
+  email: string;
+  phone: string;
+  travelConsistency: number;
+};
+
+type AuthMode = 'login' | 'signup';
+
+type AuthResponse = {
+  success: boolean;
+  message: string;
+  user?: UserProfile;
+};
+
 type BookingStatus = 'submitting' | 'success' | 'error' | null;
 
 type LocationSelectionProps = {
@@ -172,6 +194,388 @@ function LocationSelection({ selectedState, selectedPlace, onStateChange, onPlac
   );
 }
 
+function AuthView({
+  authMode,
+  onModeChange,
+  onLogin,
+  onSignup,
+  isSubmitting,
+  errorMessage
+}: {
+  authMode: AuthMode;
+  onModeChange: (mode: AuthMode) => void;
+  onLogin: (payload: { username: string; password: string }) => void;
+  onSignup: (payload: {
+    name: string;
+    surname: string;
+    email: string;
+    phone: string;
+    password: string;
+    confirmPassword: string;
+    travelConsistency: number;
+  }) => void;
+  isSubmitting: boolean;
+  errorMessage: string;
+}) {
+  const [loginForm, setLoginForm] = React.useState({ username: '', password: '' });
+  const [signupForm, setSignupForm] = React.useState({
+    name: '',
+    surname: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    travelConsistency: 3
+  });
+
+  const travelConsistencyLabel = (value: number) => {
+    if (value === 0) return '0 = None';
+    if (value >= 1 && value <= 2) return '1-2 = Fair';
+    if (value >= 3 && value <= 4) return '3-4 = Good';
+    return '5 = Better / Excellent';
+  };
+
+  return (
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#fff7ed,_#fff,_#f8fafc)] flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-5xl bg-white rounded-[32px] shadow-[0_30px_80px_rgba(15,23,42,0.12)] overflow-hidden border border-orange-100">
+        <div className="grid lg:grid-cols-2">
+          <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-orange-600 via-orange-500 to-amber-400 p-10 text-white">
+            <div>
+              <div className="flex items-center gap-3 mb-10">
+                <Navigation className="w-8 h-8" />
+                <span className="text-2xl font-bold">Incredible<span className="text-orange-100">India</span></span>
+              </div>
+              <h1 className="text-4xl font-black leading-tight mb-5">Plan your next unforgettable journey.</h1>
+              <p className="text-orange-50 text-lg">Discover heritage stays, scenic escapes, and personalized travel experiences tailored to your rhythm.</p>
+            </div>
+
+            <div className="bg-white/10 border border-white/20 rounded-2xl p-5 backdrop-blur-sm">
+              <p className="text-sm uppercase tracking-[0.2em] text-orange-100">Travel Consistency</p>
+              <p className="mt-2 text-3xl font-bold">0 to 5 scale</p>
+              <p className="mt-2 text-sm text-orange-100">0 = None • 1-2 = Fair • 3-4 = Good • 5 = Better / Excellent</p>
+            </div>
+          </div>
+
+          <div className="p-6 sm:p-10">
+            <div className="flex justify-center mb-8 rounded-full bg-orange-50 p-1 w-full max-w-xs mx-auto">
+              <button
+                type="button"
+                onClick={() => onModeChange('login')}
+                className={`flex-1 py-2.5 rounded-full font-semibold transition-colors ${authMode === 'login' ? 'bg-orange-600 text-white shadow-md' : 'text-slate-600'}`}
+              >
+                Login
+              </button>
+              <button
+                type="button"
+                onClick={() => onModeChange('signup')}
+                className={`flex-1 py-2.5 rounded-full font-semibold transition-colors ${authMode === 'signup' ? 'bg-orange-600 text-white shadow-md' : 'text-slate-600'}`}
+              >
+                Sign Up
+              </button>
+            </div>
+
+            {errorMessage && (
+              <div className="mb-5 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <AlertCircle className="w-4 h-4" />
+                {errorMessage}
+              </div>
+            )}
+
+            {authMode === 'login' ? (
+              <form
+                className="space-y-5"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  onLogin(loginForm);
+                }}
+              >
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Username</label>
+                  <input
+                    type="text"
+                    value={loginForm.username}
+                    onChange={(event) => setLoginForm({ ...loginForm, username: event.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-200"
+                    placeholder="Enter username or email"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Password</label>
+                  <input
+                    type="password"
+                    value={loginForm.password}
+                    onChange={(event) => setLoginForm({ ...loginForm, password: event.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-200"
+                    placeholder="Enter your password"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full rounded-xl bg-orange-600 px-5 py-3.5 font-semibold text-white shadow-lg shadow-orange-200 transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isSubmitting ? 'Logging in...' : 'Login'}
+                </button>
+
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-3.5 font-semibold text-slate-700 transition hover:border-orange-300 hover:text-orange-700"
+                >
+                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="h-5 w-5" />
+                  Continue with Google
+                </button>
+              </form>
+            ) : (
+              <form
+                className="space-y-5"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  onSignup(signupForm);
+                }}
+              >
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">Name</label>
+                    <input
+                      type="text"
+                      value={signupForm.name}
+                      onChange={(event) => setSignupForm({ ...signupForm, name: event.target.value })}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-200"
+                      placeholder="Enter your name"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">Surname</label>
+                    <input
+                      type="text"
+                      value={signupForm.surname}
+                      onChange={(event) => setSignupForm({ ...signupForm, surname: event.target.value })}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-200"
+                      placeholder="Enter your surname"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Email ID</label>
+                  <input
+                    type="email"
+                    value={signupForm.email}
+                    onChange={(event) => setSignupForm({ ...signupForm, email: event.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-200"
+                    placeholder="you@example.com"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={signupForm.phone}
+                    onChange={(event) => setSignupForm({ ...signupForm, phone: event.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-200"
+                    placeholder="9876543210"
+                    required
+                  />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">Password</label>
+                    <input
+                      type="password"
+                      value={signupForm.password}
+                      onChange={(event) => setSignupForm({ ...signupForm, password: event.target.value })}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-200"
+                      placeholder="Create password"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">Confirm Password</label>
+                    <input
+                      type="password"
+                      value={signupForm.confirmPassword}
+                      onChange={(event) => setSignupForm({ ...signupForm, confirmPassword: event.target.value })}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-200"
+                      placeholder="Confirm password"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-orange-100 bg-orange-50 p-4">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <label className="text-sm font-semibold text-slate-700">Travel Consistency within a year</label>
+                    <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-orange-700">{signupForm.travelConsistency}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={5}
+                    step={1}
+                    value={signupForm.travelConsistency}
+                    onChange={(event) => setSignupForm({ ...signupForm, travelConsistency: Number(event.target.value) })}
+                    className="h-2 w-full accent-orange-600"
+                  />
+                  <div className="mt-3 flex items-center justify-between text-[11px] font-medium text-slate-500">
+                    <span>0 = None</span>
+                    <span>1-2 = Fair</span>
+                    <span>3-4 = Good</span>
+                    <span>5 = Better / Excellent</span>
+                  </div>
+                  <p className="mt-3 text-xs font-semibold text-orange-700">Current: {travelConsistencyLabel(signupForm.travelConsistency)}</p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full rounded-xl bg-orange-600 px-5 py-3.5 font-semibold text-white shadow-lg shadow-orange-200 transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isSubmitting ? 'Creating account...' : 'Create Account'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AboutView({ onBack }: { onBack: () => void }) {
+  const importantLinks = [
+    { label: 'Incredible India', href: 'https://www.incredibleindia.gov.in/', description: 'Official destination inspiration from the Ministry of Tourism.' },
+    { label: 'India.gov.in', href: 'https://www.india.gov.in/', description: 'Government services, travel information, and visitor resources.' },
+    { label: 'Indian Railways', href: 'https://www.irctc.co.in/', description: 'Check train routes, schedules, and ticket availability.' },
+    { label: 'Emergency services', href: 'tel:112', description: 'Call 112 for urgent assistance anywhere in India.' }
+  ];
+
+  return (
+    <main className="min-h-screen bg-slate-50 px-6 py-12">
+      <div className="mx-auto max-w-5xl">
+        <button type="button" onClick={onBack} className="mb-8 rounded-xl border border-slate-200 bg-white px-4 py-2.5 font-semibold text-slate-700 transition hover:border-orange-300 hover:text-orange-700">
+          Back to destinations
+        </button>
+
+        <section className="relative overflow-hidden rounded-[32px] bg-slate-900 px-7 py-12 text-white shadow-xl sm:px-12">
+          <div className="absolute inset-y-0 right-0 w-1/2 bg-[url('https://images.unsplash.com/photo-1524492412937-b28074a5d7da?q=80&w=1200&auto=format&fit=crop')] bg-cover bg-center opacity-25" />
+          <div className="relative max-w-2xl">
+            <p className="mb-4 text-sm font-bold uppercase tracking-[0.2em] text-orange-400">About Incredible India</p>
+            <h1 className="text-4xl font-black leading-tight sm:text-5xl">Travel with more curiosity and less guesswork.</h1>
+            <p className="mt-6 text-lg leading-8 text-slate-300">Our objective is to make exploring India simple, personal, and inspiring by bringing destinations, local experiences, and trip planning into one welcoming place.</p>
+          </div>
+        </section>
+
+        <section className="grid gap-5 py-10 md:grid-cols-3" aria-label="App objectives">
+          <article className="rounded-2xl border border-orange-100 bg-white p-6 shadow-sm">
+            <MapPin className="mb-4 h-8 w-8 text-orange-600" />
+            <h2 className="text-xl font-bold text-slate-800">Discover deeply</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">Find heritage, nature, adventure, spiritual, and relaxation destinations across India.</p>
+          </article>
+          <article className="rounded-2xl border border-orange-100 bg-white p-6 shadow-sm">
+            <Calendar className="mb-4 h-8 w-8 text-orange-600" />
+            <h2 className="text-xl font-bold text-slate-800">Plan confidently</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">Compare options, choose a location, and send an inquiry for a more tailored journey.</p>
+          </article>
+          <article className="rounded-2xl border border-orange-100 bg-white p-6 shadow-sm">
+            <Star className="mb-4 h-8 w-8 text-orange-600" />
+            <h2 className="text-xl font-bold text-slate-800">Travel personally</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">Use your travel preferences to shape experiences that suit your pace and interests.</p>
+          </article>
+        </section>
+
+        <section className="border-t border-slate-200 pt-8">
+          <h2 className="text-2xl font-bold text-slate-800">Important links</h2>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            {importantLinks.map((link) => (
+              <a key={link.label} href={link.href} target={link.href.startsWith('http') ? '_blank' : undefined} rel={link.href.startsWith('http') ? 'noreferrer' : undefined} className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-orange-300 hover:shadow-md">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-bold text-slate-800">{link.label}</h3>
+                  <span className="text-orange-600" aria-hidden="true">↗</span>
+                </div>
+                <p className="mt-2 text-sm leading-6 text-slate-500">{link.description}</p>
+              </a>
+            ))}
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function ExperiencesView({ onBack }: { onBack: () => void }) {
+  const stories = [
+    {
+      name: 'Riya Mehta',
+      trip: 'Slow mornings in Kerala',
+      quote: 'The location suggestions helped us trade a rushed itinerary for quiet houseboat mornings and the best local food of our trip.',
+      image: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?q=80&w=900&auto=format&fit=crop'
+    },
+    {
+      name: 'Arjun Kapoor',
+      trip: 'A first Himalayan adventure',
+      quote: 'I had never planned a mountain trip before. The simple destination cards gave me the confidence to finally book Ladakh.',
+      image: 'https://images.unsplash.com/photo-1626014903706-59d8f6d65406?q=80&w=900&auto=format&fit=crop'
+    },
+    {
+      name: 'The Fernandes family',
+      trip: 'A heritage weekend in Jaipur',
+      quote: 'Everyone found something to enjoy, from the forts to the food. Our family inquiry made planning for all ages feel easy.',
+      image: 'https://images.unsplash.com/photo-1599661046289-e31897846e41?q=80&w=900&auto=format&fit=crop'
+    }
+  ];
+
+  return (
+    <main className="min-h-screen bg-slate-50 px-6 py-12">
+      <div className="mx-auto max-w-7xl">
+        <button type="button" onClick={onBack} className="mb-8 rounded-xl border border-slate-200 bg-white px-4 py-2.5 font-semibold text-slate-700 transition hover:border-orange-300 hover:text-orange-700">
+          Back to destinations
+        </button>
+
+        <section className="mb-12 max-w-3xl">
+          <p className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-orange-600">Experiences</p>
+          <h1 className="text-4xl font-black leading-tight text-slate-900 sm:text-5xl">Real journeys, remembered in their own words.</h1>
+          <p className="mt-5 text-lg leading-8 text-slate-500">See how other travelers used Incredible India to find a pace, place, and story that felt like theirs.</p>
+        </section>
+
+        <section className="grid gap-7 md:grid-cols-3" aria-label="Customer travel stories">
+          {stories.map((story) => (
+            <article key={story.name} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+              <img src={story.image} alt={story.trip} className="h-56 w-full object-cover" />
+              <div className="p-6">
+                <p className="text-sm font-bold uppercase tracking-wide text-orange-600">{story.trip}</p>
+                <blockquote className="mt-4 text-lg font-medium leading-8 text-slate-700">&quot;{story.quote}&quot;</blockquote>
+                <p className="mt-5 text-sm font-bold text-slate-900">{story.name}</p>
+                <p className="mt-1 text-sm text-slate-500">Verified Incredible India traveler</p>
+              </div>
+            </article>
+          ))}
+        </section>
+
+        <section className="mt-12 rounded-3xl bg-orange-600 px-7 py-9 text-white sm:px-10">
+          <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
+            <div>
+              <h2 className="text-2xl font-bold">Your story could be next.</h2>
+              <p className="mt-2 max-w-xl text-orange-100">Choose a destination and send an inquiry to start shaping your own Indian travel experience.</p>
+            </div>
+            <button type="button" onClick={onBack} className="rounded-xl bg-white px-5 py-3 font-bold text-orange-700 transition hover:bg-orange-50">Explore destinations</button>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
+
 export default function App() {
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
@@ -186,6 +590,12 @@ export default function App() {
   const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
   const [bookingStatus, setBookingStatus] = useState<BookingStatus>(null);
   const [backendConnected, setBackendConnected] = useState(false);
+  const [authMode, setAuthMode] = useState<AuthMode>('login');
+  const [sessionUser, setSessionUser] = useState<UserProfile | null>(null);
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [showAboutUs, setShowAboutUs] = useState(false);
+  const [showExperiences, setShowExperiences] = useState(false);
 
   useEffect(() => {
     fetchDestinations();
@@ -195,7 +605,7 @@ export default function App() {
     setLoading(true);
     try {
       // Attempt to connect to the Node.js backend
-      const response = await fetch('/api/destinations');
+      const response = await fetch(`${API_BASE_URL}/destinations`);
       if (!response.ok) throw new Error('Network response was not ok');
       const data = await response.json();
       setDestinations(data);
@@ -234,7 +644,7 @@ export default function App() {
 
     try {
       // Try hitting the real backend
-      const response = await fetch('/api/inquiries', {
+      const response = await fetch(`${API_BASE_URL}/inquiries`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -253,10 +663,98 @@ export default function App() {
     setBookingStatus(null);
   };
 
+  const handleLogin = async (payload: { username: string; password: string }) => {
+    setAuthError('');
+    setAuthSubmitting(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data: AuthResponse = await response.json();
+      if (!response.ok || !data.success || !data.user) {
+        throw new Error(data.message || 'Unable to log in.');
+      }
+
+      setSessionUser(data.user);
+      setAuthMode('login');
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Unable to log in.');
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  const handleSignup = async (payload: {
+    name: string;
+    surname: string;
+    email: string;
+    phone: string;
+    password: string;
+    confirmPassword: string;
+    travelConsistency: number;
+  }) => {
+    setAuthError('');
+    setAuthSubmitting(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data: AuthResponse = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Unable to create account.');
+      }
+
+      setAuthMode('login');
+      setAuthError('');
+      setSessionUser(data.user ?? null);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Unable to create account.');
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
   const openLocationSelection = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     setShowLocationSelection(true);
+    setShowExperiences(false);
+    setShowAboutUs(false);
   };
+
+  const openAboutUs = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    setShowAboutUs(true);
+    setShowExperiences(false);
+    setShowLocationSelection(false);
+  };
+
+  const openExperiences = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    setShowExperiences(true);
+    setShowAboutUs(false);
+    setShowLocationSelection(false);
+  };
+
+  if (!sessionUser) {
+    return (
+      <AuthView
+        authMode={authMode}
+        onModeChange={setAuthMode}
+        onLogin={handleLogin}
+        onSignup={handleSignup}
+        isSubmitting={authSubmitting}
+        errorMessage={authError}
+      />
+    );
+  }
 
   const confirmLocation = () => {
     if (!selectedState || !selectedPlace) return;
@@ -274,15 +772,28 @@ export default function App() {
         </div>
         <div className="hidden md:flex gap-8 font-medium text-slate-600">
           <a href="#destinations" onClick={openLocationSelection} className="hover:text-orange-600 transition-colors">Destinations</a>
-          <a href="#" className="hover:text-orange-600 transition-colors">Experiences</a>
-          <a href="#" className="hover:text-orange-600 transition-colors">About Us</a>
+          <a href="#experiences" onClick={openExperiences} className="hover:text-orange-600 transition-colors">Experiences</a>
+          <a href="#about-us" onClick={openAboutUs} className="hover:text-orange-600 transition-colors">About Us</a>
         </div>
-        <button className="bg-orange-600 text-white px-5 py-2 rounded-full font-medium hover:bg-orange-700 transition-colors shadow-lg shadow-orange-200">
-          Plan Trip
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:block rounded-full bg-orange-50 px-3 py-1.5 text-sm font-semibold text-orange-700">
+            {sessionUser.name}
+          </div>
+          <button
+            type="button"
+            onClick={() => setSessionUser(null)}
+            className="bg-orange-600 text-white px-5 py-2 rounded-full font-medium hover:bg-orange-700 transition-colors shadow-lg shadow-orange-200"
+          >
+            Logout
+          </button>
+        </div>
       </nav>
 
-      {showLocationSelection ? (
+      {showExperiences ? (
+        <ExperiencesView onBack={() => setShowExperiences(false)} />
+      ) : showAboutUs ? (
+        <AboutView onBack={() => setShowAboutUs(false)} />
+      ) : showLocationSelection ? (
         <LocationSelection
           selectedState={selectedState}
           selectedPlace={selectedPlace}

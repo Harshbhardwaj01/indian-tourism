@@ -4,6 +4,8 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const users = [];
+
 // Middleware
 app.use(cors()); // Allow cross-origin requests from the React frontend
 app.use(express.json()); // Parse incoming JSON requests
@@ -69,6 +71,15 @@ const destinations = [
 // Store inquiries in memory (would be a DB table in production)
 const inquiries = [];
 
+function sanitizeUser(user) {
+  const { password, ...safeUser } = user;
+  return safeUser;
+}
+
+function findUserByUsername(username) {
+  return users.find((user) => user.email === username || user.username === username);
+}
+
 // Root endpoint for quick browser checks
 app.get('/', (req, res) => {
   res.json({
@@ -128,6 +139,77 @@ app.post('/api/inquiries', (req, res) => {
 // GET: Fetch submitted booking inquiries
 app.get('/api/inquiries', (req, res) => {
   res.json(inquiries);
+});
+
+app.post('/api/auth/signup', (req, res) => {
+  try {
+    const { name, surname, email, phone, password, confirmPassword, travelConsistency } = req.body || {};
+
+    if (!name || !surname || !email || !phone || !password || !confirmPassword) {
+      return res.status(400).json({ success: false, message: 'All fields are required.' });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ success: false, message: 'Passwords do not match.' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
+    }
+
+    if (findUserByUsername(email)) {
+      return res.status(409).json({ success: false, message: 'An account with this email already exists.' });
+    }
+
+    const newUser = {
+      id: users.length + 1,
+      name,
+      surname,
+      username: email,
+      email,
+      phone,
+      password,
+      travelConsistency: Number(travelConsistency) || 0,
+      createdAt: new Date().toISOString()
+    };
+
+    users.push(newUser);
+
+    res.status(201).json({
+      success: true,
+      message: 'Account created successfully.',
+      user: sanitizeUser(newUser)
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error creating account.', error: error.message });
+  }
+});
+
+app.post('/api/auth/login', (req, res) => {
+  try {
+    const { username, password } = req.body || {};
+
+    if (!username || !password) {
+      return res.status(400).json({ success: false, message: 'Username and password are required.' });
+    }
+
+    const user = findUserByUsername(username);
+    if (!user || user.password !== password) {
+      return res.status(401).json({ success: false, message: 'Invalid username or password.' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful.',
+      user: sanitizeUser(user)
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error logging in.', error: error.message });
+  }
+});
+
+app.get('/api/auth/users', (req, res) => {
+  res.json(users.map(sanitizeUser));
 });
 
 // Health check endpoint
